@@ -1,0 +1,129 @@
+# Motor de Jogo Avançado - André Ruan Edition
+html_pro = """
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>BIO-LAB 3D: INFINITE</title>
+    <style>
+        body { margin: 0; background: #000; color: #f00; font-family: 'Courier New'; overflow: hidden; }
+        #game-container { position: relative; width: 100vw; height: 100vh; }
+        canvas { width: 100%; height: 100%; image-rendering: pixelated; }
+        
+        /* Controles de Celular Estilo Console */
+        .controls { position: absolute; bottom: 20px; left: 20px; display: grid; grid-template-columns: repeat(3, 60px); gap: 10px; z-index: 100; }
+        .btn { width: 60px; height: 60px; background: rgba(255,0,0,0.2); border: 2px solid #f00; color: #f00; display: flex; align-items: center; justify-content: center; border-radius: 50%; font-weight: bold; -webkit-user-select: none; }
+        .btn:active { background: #f00; color: #000; }
+        
+        #overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: radial-gradient(circle, transparent 30%, black 90%); pointer-events: none; }
+        #stats { position: absolute; top: 10px; right: 10px; font-size: 14px; text-align: right; }
+    </style>
+</head>
+<body>
+    <div id="game-container">
+        <div id="stats">SISTEMA BIO-SCAN: ONLINE<br>PROFUNDIDADE: <span id="depth">0</span>m</div>
+        <div id="overlay"></div>
+        <canvas id="renderer"></canvas>
+        
+        <div class="controls">
+            <div></div><div class="btn" id="up">W</div><div></div>
+            <div class="btn" id="left">A</div><div class="btn" id="down">S</div><div class="btn" id="right">D</div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('renderer');
+        const ctx = canvas.getContext('2d');
+        canvas.width = 300; // Baixa res para estilo Retro-3D HD
+        canvas.height = 200;
+
+        // --- ENGENHARIA DO MAPA (DNA PROCEDURAL) ---
+        const mapSize = 24;
+        let map = [
+            [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+            [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+            [1,0,1,1,0,1,0,1,1,1,0,1,1,1,0,1,0,1,1,1,0,1,0,1],
+            [1,0,0,0,0,1,0,0,0,1,0,0,0,1,0,1,0,0,0,0,0,1,0,1],
+            [1,1,1,1,0,1,1,1,0,1,1,1,0,1,0,1,1,1,1,1,0,1,0,1],
+            [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+            [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
+        ];
+
+        let player = { x: 2, y: 2, dir: 0, plane: 0.66 };
+        let moveState = { fwd: 0, side: 0 };
+
+        // --- MOTOR DE RAYCASTING (A MÁGICA 3D) ---
+        function draw() {
+            ctx.fillStyle = "#050000"; ctx.fillRect(0,0,300,100); // Teto
+            ctx.fillStyle = "#1a0000"; ctx.fillRect(0,100,300,200); // Chão
+
+            for(let x = 0; x < 300; x++) {
+                let cameraX = 2 * x / 300 - 1;
+                let rayDirX = Math.cos(player.dir) + Math.cos(player.dir + Math.PI/2) * player.plane * cameraX;
+                let rayDirY = Math.sin(player.dir) + Math.sin(player.dir + Math.PI/2) * player.plane * cameraX;
+
+                let mapX = Math.floor(player.x);
+                let mapY = Math.floor(player.y);
+                let sideDistX, sideDistY;
+                let deltaDistX = Math.abs(1 / rayDirX);
+                let deltaDistY = Math.abs(1 / rayDirY);
+                let stepX, stepY, hit = 0, side;
+
+                if (rayDirX < 0) { stepX = -1; sideDistX = (player.x - mapX) * deltaDistX; }
+                else { stepX = 1; sideDistX = (mapX + 1.0 - player.x) * deltaDistX; }
+                if (rayDirY < 0) { stepY = -1; sideDistY = (player.y - mapY) * deltaDistY; }
+                else { stepY = 1; sideDistY = (mapY + 1.0 - player.y) * deltaDistY; }
+
+                while (hit == 0) {
+                    if (sideDistX < sideDistY) { sideDistX += deltaDistX; mapX += stepX; side = 0; }
+                    else { sideDistY += deltaDistY; mapY += stepY; side = 1; }
+                    if (map[mapY] && map[mapY][mapX] > 0) hit = 1;
+                }
+
+                let perpWallDist = (side == 0) ? (sideDistX - deltaDistX) : (sideDistY - deltaDistY);
+                let lineHeight = Math.floor(200 / perpWallDist);
+                
+                // Cor baseada na distância (Efeito HD de névoa)
+                let color = 255 - (perpWallDist * 20);
+                ctx.strokeStyle = `rgb(${color},0,0)`;
+                if(side == 1) ctx.strokeStyle = `rgb(${color*0.7},0,0)`;
+                
+                ctx.beginPath();
+                ctx.moveTo(x, 100 - lineHeight/2);
+                ctx.lineTo(x, 100 + lineHeight/2);
+                ctx.stroke();
+            }
+            update();
+            requestAnimationFrame(draw);
+        }
+
+        function update() {
+            let moveSpeed = 0.05;
+            let rotSpeed = 0.03;
+            if(moveState.fwd) {
+                let nextX = player.x + Math.cos(player.dir) * moveState.fwd * moveSpeed;
+                let nextY = player.y + Math.sin(player.dir) * moveState.fwd * moveSpeed;
+                if(map[Math.floor(player.y)][Math.floor(nextX)] == 0) player.x = nextX;
+                if(map[Math.floor(nextY)][Math.floor(player.x)] == 0) player.y = nextY;
+            }
+            player.dir += moveState.side * rotSpeed;
+        }
+
+        // --- CONTROLES ---
+        const bind = (id, fwd, side) => {
+            const el = document.getElementById(id);
+            el.ontouchstart = () => { moveState.fwd = fwd; moveState.side = side; };
+            el.ontouchend = () => { moveState.fwd = 0; moveState.side = 0; };
+        };
+        bind('up', 1, 0); bind('down', -1, 0); bind('left', 0, -1); bind('right', 0, 1);
+
+        draw();
+    </script>
+</body>
+</html>
+"""
+
+with open("pro_game.html", "w") as f: f.write(html_pro)
+print("Engenharia de Jogo 3D Finalizada!")
+
