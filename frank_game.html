@@ -1,0 +1,122 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BIO-LAB: THE FRANKENSTEIN PROJECT</title>
+    <style>
+        body { margin: 0; overflow: hidden; background: #000; }
+        #vignette { position: fixed; top: 0; left: 0; width: 100%; height: 100%; box-shadow: inset 0 0 150px #000; pointer-events: none; z-index: 10; }
+        #instructions { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #f00; text-align: center; font-family: monospace; z-index: 20; }
+    </style>
+</head>
+<body>
+    <div id="vignette"></div>
+    <div id="instructions">TOQUE E ARRASTE PARA OLHAR<br>CLIQUE PARA INICIAR</div>
+    
+    <script type="importmap">
+    { "imports": { "three": "https://unpkg.com/three@0.160.0/build/three.module.js" } }
+    </script>
+
+    <script type="module">
+        import * as THREE from 'three';
+
+        // 1. CENA E AMBIENTE (ENGENHARIA DE LUZ)
+        const scene = new THREE.Scene();
+        scene.fog = new THREE.FogExp2(0x000000, 0.15); // Névoa de terror
+
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+
+        // 2. CONSTRUÇÃO DO CENÁRIO (CHÃO E PAREDES REALISTAS)
+        const planeGeo = new THREE.PlaneGeometry(100, 100);
+        const planeMat = new THREE.MeshStandardMaterial({ color: 0x111111 });
+        const floor = new THREE.Mesh(planeGeo, planeMat);
+        floor.rotation.x = -Math.PI / 2;
+        scene.add(floor);
+
+        // Criando um corredor de "Frankenstein"
+        const wallGeo = new THREE.BoxGeometry(2, 5, 10);
+        const wallMat = new THREE.MeshStandardMaterial({ color: 0x220000 });
+        for(let i=0; i<10; i++) {
+            const wallLeft = new THREE.Mesh(wallGeo, wallMat);
+            wallLeft.position.set(-3, 2.5, -i * 10);
+            scene.add(wallLeft);
+            
+            const wallRight = new THREE.Mesh(wallGeo, wallMat);
+            wallRight.position.set(3, 2.5, -i * 10);
+            scene.add(wallRight);
+        }
+
+        // 3. O "ESPÉCIME" (MONSTRO 3D PROCEDURAL)
+        const monsterGeo = new THREE.SphereGeometry(1, 32, 32);
+        const monsterMat = new THREE.MeshBasicMaterial({ color: 0xff0000, wireframe: true });
+        const monster = new THREE.Mesh(monsterGeo, monsterMat);
+        monster.position.set(0, 1.5, -20);
+        scene.add(monster);
+
+        // 4. LANTERNA DO JOGADOR (LUZ DINÂMICA)
+        const light = new THREE.PointLight(0xffffff, 50, 15);
+        scene.add(light);
+
+        // 5. CONTROLES DE ELITE (MOVIMENTO SUAVE)
+        let lat = 0, lon = 0, phi = 0, theta = 0;
+        let isUserInteracting = false;
+        let onPointerDownPointerX = 0, onPointerDownPointerY = 0, onPointerDownLon = 0, onPointerDownLat = 0;
+
+        document.addEventListener('pointerdown', (e) => {
+            isUserInteracting = true;
+            onPointerDownPointerX = e.clientX;
+            onPointerDownPointerY = e.clientY;
+            onPointerDownLon = lon;
+            onPointerDownLat = lat;
+            document.getElementById('instructions').style.display = 'none';
+        });
+
+        document.addEventListener('pointermove', (e) => {
+            if (isUserInteracting) {
+                lon = (onPointerDownPointerX - e.clientX) * 0.1 + onPointerDownLon;
+                lat = (e.clientY - onPointerDownPointerY) * 0.1 + onPointerDownLat;
+            }
+        });
+
+        document.addEventListener('pointerup', () => { isUserInteracting = false; });
+
+        // 6. LOOP DE RENDERIZAÇÃO (FPS ALTO)
+        function animate() {
+            requestAnimationFrame(animate);
+
+            // Física do Olhar
+            lat = Math.max(-85, Math.min(85, lat));
+            phi = THREE.MathUtils.degToRad(90 - lat);
+            theta = THREE.MathUtils.degToRad(lon);
+
+            const target = new THREE.Vector3();
+            target.x = 500 * Math.sin(phi) * Math.cos(theta);
+            target.y = 500 * Math.cos(phi);
+            target.z = 500 * Math.sin(phi) * Math.sin(theta);
+            camera.lookAt(target);
+
+            // Movimento Automático (Fuga Infinita)
+            camera.position.z -= 0.05;
+            light.position.copy(camera.position);
+
+            // Animação do Monstro
+            monster.rotation.y += 0.05;
+            monster.position.y = 1.5 + Math.sin(Date.now() * 0.005) * 0.5;
+
+            renderer.render(scene, camera);
+        }
+        animate();
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+    </script>
+</body>
+</html>
