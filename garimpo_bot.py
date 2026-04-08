@@ -2,44 +2,39 @@ import requests
 from bs4 import BeautifulSoup
 from urllib.parse import unquote, urlparse
 
-print("--- ☣️ PROTOCOLO INDUSTRIAL: BUSCA DE ALVOS PRIVADOS ☣️ ---")
-print("Escaneando galpões, fábricas e salas de servidores...")
+print("--- 🛰️ PROTOCOLO: ZONAS DE SOMBRA (ORIENTE MÉDIO / ÁFRICA) ---")
+print("Escaneando infraestrutura em regiões de baixa proteção...")
 
-# Dorks de Precisão: Focando no que está trancado (ou deveria estar)
+# Dorks com filtros de países (AE=Emirados, TR=Turquia, EG=Egito, NG=Nigéria, ZA=África do Sul)
 queries = [
-    'intitle:"Live View / - AXIS" "Warehouse"',
-    'intitle:"Live View / - AXIS" "Factory"',
-    'intitle:"Live View / - AXIS" "Office"',
-    'intitle:"Live View / - AXIS" "Server Room"',
-    'inurl:"/view/viewer_index.shtml" "Shop"',
-    'inurl:"/mjpg/video.mjpg" "Industrial"'
+    'intitle:"Live View / - AXIS" site:.ae', # Emirados Árabes (Riqueza/Petróleo)
+    'intitle:"Live View / - AXIS" site:.tr', # Turquia (Indústrias)
+    'intitle:"Live View / - AXIS" site:.eg', # Egito (Logística)
+    'intitle:"Live View / - AXIS" site:.ng', # Nigéria (Exploração)
+    'intitle:"Live View / - AXIS" site:.za', # África do Sul (Mineração)
+    'inurl:"viewerframe?mode=" site:.jo'     # Jordânia
 ]
 
-# Filtro Anti-Lixo (Ignorar sites que não são câmeras)
-blacklist = ["amazon", "ebay", "dicio", "reviews", "youtube", "google", "facebook", "pinterest", "reddit"]
-
+blacklist = ["amazon", "ebay", "dicio", "reviews", "youtube", "google", "facebook", "pinterest", "reddit", "blog"]
 links_finais = []
-headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'}
+headers = {'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36'}
 
 for q in queries:
-    print(f"[BUSCANDO]: {q}")
+    print(f"[SCANNING REGION]: {q.split('.')[-1]}")
     url = f"https://duckduckgo.com/html/?q={q}"
     try:
-        res = requests.get(url, headers=headers, timeout=10)
+        res = requests.get(url, headers=headers, timeout=12)
         if res.status_code == 200:
             sopa = BeautifulSoup(res.text, 'html.parser')
             links = sopa.find_all('a', class_='result__a')
             
             for l in links:
                 url_suja = l['href']
-                
-                # Desmascarando o link real do DuckDuckGo
                 if 'uddg=' in url_suja:
                     url_real = unquote(url_suja.split('uddg=')[1].split('&')[0])
                 else:
                     url_real = url_suja
 
-                # Aplicando Filtro de Elite
                 if not any(lixo in url_real.lower() for lixo in blacklist):
                     if url_real.startswith('http'):
                         links_finais.append({'titulo': l.text.strip(), 'url': url_real})
@@ -47,52 +42,41 @@ for q in queries:
     except:
         continue
 
-# --- ENGENHARIA DO HTML (V3 - INDUSTRIAL DARK) ---
+# --- GERADOR DE PAINEL DE MONITORAMENTO ---
 html_content = f"""
 <!DOCTYPE html>
-<html lang="pt-br">
+<html>
 <head>
     <meta charset="UTF-8">
-    <title>SISTEMA OLHO DE DEUS - INDUSTRIAL</title>
+    <title>SCANNER GLOBAL - ZONAS DE SOMBRA</title>
     <style>
-        body {{ background: #050505; color: #00ff00; font-family: 'Courier New', monospace; padding: 20px; }}
-        .radar {{ border: 2px solid #ff0000; padding: 20px; box-shadow: 0 0 20px #500; background: rgba(10,0,0,0.9); }}
-        h1 {{ color: #ff0000; text-shadow: 0 0 10px #f00; text-align: center; border-bottom: 2px solid #f00; padding-bottom: 10px; }}
-        .item {{ margin: 20px 0; border: 1px solid #333; padding: 15px; background: #111; transition: 0.3s; }}
-        .item:hover {{ border-color: #ff0; background: #1a1a1a; }}
-        .status {{ color: #ff0; font-size: 11px; margin-bottom: 5px; }}
-        a {{ color: #00ffff; text-decoration: none; font-weight: bold; font-size: 16px; word-break: break-all; }}
-        .footer {{ text-align: center; color: #444; margin-top: 30px; font-size: 10px; }}
+        body {{ background: #000; color: #0f0; font-family: 'Courier New', monospace; padding: 20px; }}
+        .radar {{ border: 2px solid #f00; padding: 20px; box-shadow: 0 0 20px #f00; background: rgba(20,0,0,0.9); }}
+        h1 {{ color: #f00; text-align: center; text-shadow: 0 0 10px #f00; }}
+        .item {{ border-left: 4px solid #f00; padding: 15px; margin: 15px 0; background: #111; }}
+        a {{ color: #0ff; text-decoration: none; font-size: 16px; font-weight: bold; }}
+        .geo {{ color: #ff0; font-size: 11px; text-transform: uppercase; }}
     </style>
 </head>
 <body>
     <div class="radar">
-        <h1>☣️ MONITORAMENTO DE INFRAESTRUTURA PRIVADA</h1>
-        <p style="text-align:center">> STATUS: CONEXÃO PONTO-A-PONTO ESTABELECIDA <</p>
+        <h1>☣️ GLOBAL SHADOW MONITORING</h1>
+        <p style="text-align:center">> ALVOS FILTRADOS POR REGIÃO GEOPOLÍTICA <</p>
 """
-
-if not links_finais:
-    html_content += "<p style='color:orange; text-align:center;'>[!] Nenhum galpão aberto detectado nesta frequência. Tente novamente em 5 min.</p>"
 
 for i in links_finais:
     domain = urlparse(i['url']).netloc
     html_content += f"""
         <div class="item">
-            <div class="status">[!] ALVO DETECTADO: {domain}</div>
-            <div style="color:#aaa; font-size:14px;">{i['titulo']}</div>
-            <a href="{i['url']}" target="_blank">>>> ACESSAR TRANSMISSÃO INDUSTRIAL</a>
+            <div class="geo">REGIÃO DETECTADA: {domain.split('.')[-1]}</div>
+            <div style="color:#eee; margin: 5px 0;">{i['titulo']}</div>
+            <a href="{i['url']}" target="_blank">>>> ACESSAR TRANSMISSÃO REMOTA</a>
         </div>
     """
 
-html_content += """
-        <div class="footer">AVISO: USO EXCLUSIVO PARA ESTUDOS DE SEGURANÇA DIGITAL.</div>
-    </div>
-</body>
-</html>
-"""
+html_content += "</div></body></html>"
 
 with open("garimpo.html", "w", encoding="utf-8") as f:
     f.write(html_content)
-
-print(f"--- 🛰️ PROTOCOLO CONCLUÍDO. {len(links_finais)} ALVOS NO GARIMPO.HTML ---")
+print(f"--- 🛰️ CONCLUÍDO: {len(links_finais)} DISPOSITIVOS ENCONTRADOS ---")
 
