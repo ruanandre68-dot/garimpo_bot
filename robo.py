@@ -1,36 +1,44 @@
 import requests
 from bs4 import BeautifulSoup
 
-print("Iniciando a varredura profunda...")
-url = "https://lista.mercadolivre.com.br/lote-pecas"
+print("Iniciando a varredura financeira...")
+
+# Vamos focar num nicho que você entende: equipamentos técnicos e biológicos
+url = "https://lista.mercadolivre.com.br/lote-laboratorio-microscopio"
 headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
+
+# O seu link de afiliado oficial
+LINK_AFILIADO = "https://meli.la/1VKV9Jd"
 
 resposta = requests.get(url, headers=headers)
 
 if resposta.status_code == 200:
     sopa = BeautifulSoup(resposta.text, 'html.parser')
+    todos_h2 = sopa.find_all('h2')
+    produtos_reais = []
     
-    # Busca os títulos dos produtos (o Mercado Livre geralmente usa a tag h2 para os nomes)
-    produtos = sopa.find_all('h2')
+    for h2 in todos_h2:
+        texto = h2.text.strip()
+        # Filtro para pegar apenas produtos reais e ignorar menus
+        if len(texto) > 15 and "Filtros" not in texto:
+            produtos_reais.append(texto)
     
-    # Começa a montar a estrutura do seu site
-    site_html = "<html><head><meta charset='utf-8'><title>Vitrine Fantasma</title></head><body>"
-    site_html += "<h1>Achados do Robô - Lotes e Peças</h1><ul>"
+    site_html = "<html><head><meta charset='utf-8'><title>Vitrine Investigativa de Biologia</title></head><body>"
+    site_html += "<h1 style='color: #2e7d32;'>Garimpo Técnico: Lotes e Equipamentos</h1>"
+    site_html += "<p>Produtos selecionados via varredura automatizada.</p><ul>"
     
-    # Pega os 5 primeiros resultados e coloca na lista do site
-    for produto in produtos[:5]:
-        nome = produto.text
-        # Aqui, no futuro, entrará o seu link de afiliado
-        site_html += f"<li><b>{nome}</b> - <a href='#'>Comprar (Link Afiliado)</a></li>"
-        print(f"Alvo detectado: {nome}")
+    # Gerando os links com a sua comissão
+    for nome in produtos_reais[:8]:
+        site_html += f"<li style='margin-bottom: 15px;'><b>{nome}</b><br>"
+        site_html += f"<a href='{LINK_AFILIADO}' style='color: blue;'>Ver Preço e Detalhes na Loja Oficial</a></li>"
+        print(f"Produto lucrativo detectado: {nome}")
         
     site_html += "</ul></body></html>"
     
-    # Salva tudo no arquivo que será a sua página na internet
     with open("index.html", "w", encoding="utf-8") as arquivo:
         arquivo.write(site_html)
         
-    print("Sucesso! Arquivo 'index.html' gerado. A sua vitrine base está pronta.")
+    print("Sucesso! Vitrine monetizada com seu link de afiliado.")
 else:
-    print("Acesso negado. Código:", resposta.status_code)
+    print("Erro de conexão.")
 
