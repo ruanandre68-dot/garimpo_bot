@@ -1,29 +1,26 @@
 import requests
 from bs4 import BeautifulSoup
-from urllib.parse import unquote, urlparse
+from urllib.parse import unquote
+import time
 
-print("--- 🛰️ PROTOCOLO: ZONAS DE SOMBRA (ORIENTE MÉDIO / ÁFRICA) ---")
-print("Escaneando infraestrutura em regiões de baixa proteção...")
+print("--- 🛰️ PROTOCOLO: DEEP SCAN V5 (SNIPER CAMUFLADO) ---")
 
-# Dorks com filtros de países (AE=Emirados, TR=Turquia, EG=Egito, NG=Nigéria, ZA=África do Sul)
+# Dorks que miram em falhas de login e roteadores de galpões
 queries = [
-    'intitle:"Live View / - AXIS" site:.ae', # Emirados Árabes (Riqueza/Petróleo)
-    'intitle:"Live View / - AXIS" site:.tr', # Turquia (Indústrias)
-    'intitle:"Live View / - AXIS" site:.eg', # Egito (Logística)
-    'intitle:"Live View / - AXIS" site:.ng', # Nigéria (Exploração)
-    'intitle:"Live View / - AXIS" site:.za', # África do Sul (Mineração)
-    'inurl:"viewerframe?mode=" site:.jo'     # Jordânia
+    'intitle:"index of" "inurl:ftp" "password"',
+    'intitle:"Network Camera" inurl:/view/viewer_index.shtml',
+    'intitle:"toshiba network camera" inurl:user=admin',
+    'inurl:"/control/userget.htm"'
 ]
 
-blacklist = ["amazon", "ebay", "dicio", "reviews", "youtube", "google", "facebook", "pinterest", "reddit", "blog"]
 links_finais = []
-headers = {'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36'}
+headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; rv:110.0) Gecko/20100101 Firefox/110.0'}
 
 for q in queries:
-    print(f"[SCANNING REGION]: {q.split('.')[-1]}")
+    print(f"[ESCANEANDO]: {q[:30]}...")
     url = f"https://duckduckgo.com/html/?q={q}"
     try:
-        res = requests.get(url, headers=headers, timeout=12)
+        res = requests.get(url, headers=headers, timeout=15)
         if res.status_code == 200:
             sopa = BeautifulSoup(res.text, 'html.parser')
             links = sopa.find_all('a', class_='result__a')
@@ -35,48 +32,55 @@ for q in queries:
                 else:
                     url_real = url_suja
 
-                if not any(lixo in url_real.lower() for lixo in blacklist):
+                # Filtro de sites de segurança (que explicam como hackear mas não são a camera)
+                if "shodan" not in url_real and "exploit-db" not in url_real:
                     if url_real.startswith('http'):
                         links_finais.append({'titulo': l.text.strip(), 'url': url_real})
-                        print(f"[ALVO CONFIRMADO]: {url_real}")
+                        print(f"[ALVO]: {url_real[:50]}...")
+        
+        # Pausa para não ser bloqueado (O segredo do garimpo silencioso)
+        time.sleep(2) 
     except:
         continue
 
-# --- GERADOR DE PAINEL DE MONITORAMENTO ---
+# --- HTML DE MONITORAMENTO ---
 html_content = f"""
 <!DOCTYPE html>
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>SCANNER GLOBAL - ZONAS DE SOMBRA</title>
+    <title>SISTEMA OLHO DE DEUS - DEEP SCAN</title>
     <style>
-        body {{ background: #000; color: #0f0; font-family: 'Courier New', monospace; padding: 20px; }}
-        .radar {{ border: 2px solid #f00; padding: 20px; box-shadow: 0 0 20px #f00; background: rgba(20,0,0,0.9); }}
-        h1 {{ color: #f00; text-align: center; text-shadow: 0 0 10px #f00; }}
-        .item {{ border-left: 4px solid #f00; padding: 15px; margin: 15px 0; background: #111; }}
-        a {{ color: #0ff; text-decoration: none; font-size: 16px; font-weight: bold; }}
-        .geo {{ color: #ff0; font-size: 11px; text-transform: uppercase; }}
+        body {{ background: #050505; color: #0f0; font-family: 'Courier New', monospace; padding: 20px; }}
+        .radar {{ border: 2px solid #0f0; padding: 20px; box-shadow: 0 0 20px #0f0; }}
+        h1 {{ color: #f00; text-align: center; text-transform: uppercase; }}
+        .item {{ border: 1px solid #0f0; padding: 15px; margin: 15px 0; background: rgba(0,255,0,0.05); }}
+        a {{ color: #0ff; text-decoration: none; font-weight: bold; }}
+        .warning {{ color: red; font-size: 10px; border: 1px solid red; padding: 10px; margin-top: 20px; }}
     </style>
 </head>
 <body>
     <div class="radar">
-        <h1>☣️ GLOBAL SHADOW MONITORING</h1>
-        <p style="text-align:center">> ALVOS FILTRADOS POR REGIÃO GEOPOLÍTICA <</p>
+        <h1>☣️ MONITORAMENTO DE REDES EXPOSTAS</h1>
+        <p style="text-align:center">> STATUS: {len(links_finais)} DISPOSITIVOS DETECTADOS <</p>
 """
 
 for i in links_finais:
-    domain = urlparse(i['url']).netloc
     html_content += f"""
         <div class="item">
-            <div class="geo">REGIÃO DETECTADA: {domain.split('.')[-1]}</div>
-            <div style="color:#eee; margin: 5px 0;">{i['titulo']}</div>
-            <a href="{i['url']}" target="_blank">>>> ACESSAR TRANSMISSÃO REMOTA</a>
+            <div>IDENTIFICADO: {i['titulo'][:60]}</div>
+            <a href="{i['url']}" target="_blank">>>> TENTAR CONEXÃO REMOTA</a>
         </div>
     """
 
-html_content += "</div></body></html>"
+html_content += """
+        <div class="warning">AVISO: O acesso não autorizado é ilegal. Use apenas para fins educacionais.</div>
+    </div>
+</body>
+</html>
+"""
 
 with open("garimpo.html", "w", encoding="utf-8") as f:
     f.write(html_content)
-print(f"--- 🛰️ CONCLUÍDO: {len(links_finais)} DISPOSITIVOS ENCONTRADOS ---")
+print(f"--- 🛰️ CONCLUÍDO. {len(links_finais)} ALVOS NO GARIMPO.HTML ---")
 
