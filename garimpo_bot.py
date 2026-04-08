@@ -1,75 +1,67 @@
 import requests
 from bs4 import BeautifulSoup
 
-print("--- 🛰️ INICIANDO PROTOCOLO: OLHO DE DEUS ---")
-print("Buscando transmissões e diretórios não protegidos...")
+print("--- 🛰️ INICIANDO PROTOCOLO: SNIPER DE TRANSMISSÃO ---")
+print("Buscando fluxos de vídeo ao vivo e painéis AXIS...")
 
-# Dorks assustadoras: Câmeras IP (Live View) e Backups de Banco de Dados
+# As Dorks de precisão para câmeras reais
 queries = [
-    'inurl:"view/view.shtml"', # Câmeras de segurança abertas
-    'intitle:"index of" "password.txt" | "config.php"', # Arquivos de senha esquecidos
-    'intitle:"index of" "backup" "sql"' # Backups de bancos de dados
+    'intitle:"Live View / - AXIS"',
+    'inurl:"/view/viewer_index.shtml"',
+    'intitle:"Network Camera NetworkCamera"',
+    'inurl:"/mjpg/video.mjpg"'
 ]
 
 links_finais = []
-headers = {'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36'}
+headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'}
 
 for q in queries:
-    # Usando o DuckDuckGo (Mais "amigável" para o nosso garimpo)
+    # Usando DuckDuckGo para evitar bloqueios rápidos
     url = f"https://duckduckgo.com/html/?q={q}"
     try:
         res = requests.get(url, headers=headers)
         if res.status_code == 200:
             sopa = BeautifulSoup(res.text, 'html.parser')
+            # Pega os resultados do DuckDuckGo
             links = sopa.find_all('a', class_='result__a')
-            for l in links[:3]: # Pega os 3 melhores de cada categoria
-                links_finais.append({'titulo': l.text, 'url': l['href']})
-                print(f"[ALVO DETECTADO]: {l.text[:40]}...")
+            for l in links[:5]: 
+                links_finais.append({'titulo': l.text.strip(), 'url': l['href']})
+                print(f"[ALVO]: {l.text[:40]}...")
     except:
         continue
 
-# --- HTML DE ELITE (ESTILO MATRIX/TERMINAL) ---
+# --- HTML DE MONITORAMENTO ---
 html = f"""
 <!DOCTYPE html>
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>SISTEMA DE MONITORAMENTO FANTASMA</title>
+    <title>SISTEMA OLHO DE DEUS</title>
     <style>
-        body {{ background: #000; color: #0f0; font-family: 'Courier New'; padding: 20px; text-transform: uppercase; }}
-        .radar {{ border: 2px solid #0f0; padding: 20px; box-shadow: 0 0 20px #0f0; }}
-        h1 {{ color: #f00; font-size: 20px; border-bottom: 2px solid #f00; padding-bottom: 10px; }}
-        .item {{ margin: 20px 0; border-left: 3px solid #f00; padding-left: 10px; animation: pulse 2s infinite; }}
-        @keyframes pulse {{ 0% {{ opacity: 1; }} 50% {{ opacity: 0.5; }} 100% {{ opacity: 1; }} }}
-        a {{ color: #0ff; text-decoration: none; font-size: 12px; }}
-        .warning {{ color: #ff0; font-size: 10px; margin-top: 40px; border: 1px dashed #ff0; padding: 10px; }}
+        body {{ background: #000; color: #0f0; font-family: monospace; padding: 20px; }}
+        .radar {{ border: 2px solid #0f0; padding: 20px; box-shadow: 0 0 15px #0f0; }}
+        .cam-item {{ margin: 15px 0; border-left: 3px solid #f00; padding: 10px; background: rgba(255,0,0,0.05); }}
+        a {{ color: #0ff; text-decoration: none; font-weight: bold; }}
+        h1 {{ color: #f00; text-shadow: 0 0 5px #f00; }}
     </style>
 </head>
 <body>
     <div class="radar">
-        <h1>☣️ ALVOS DETECTADOS NA REDE MUNDIAL</h1>
-        <p>> ESCANEAMENTO DE INFRAESTRUTURA COMPLETO...</p>
+        <h1>☣️ FEED DE VÍDEO DETECTADO</h1>
+        <p>> ESCANEANDO FREQUÊNCIAS...</p>
 """
 
 for i in links_finais:
     html += f"""
-        <div class="item">
-            <div style="font-weight:bold; color: #0f0;">> DETECTADO: {i['titulo']}</div>
-            <a href="{i['url']}" target="_blank">ACESSAR TRANSMISSÃO / DIRETÓRIO</a>
+        <div class="cam-item">
+            <div style="color:#0f0">> CANAL: {i['titulo']}</div>
+            <a href="{i['url']}" target="_blank">CONECTAR AO FLUXO DE VÍDEO</a>
         </div>
     """
 
-html += """
-        <div class="warning">
-            AVISO: O acesso a sistemas de terceiros sem autorização é ilegal. 
-            Este robô serve apenas para fins de estudo de segurança cibernética (OSINT).
-        </div>
-    </div>
-</body>
-</html>
-"""
+html += "</div></body></html>"
 
 with open("garimpo.html", "w", encoding="utf-8") as f:
     f.write(html)
-print("--- 🛰️ GARIMPO CONCLUÍDO COM SUCESSO ---")
+print("--- 🛰️ PROTOCOLO CONCLUÍDO. garimpo.html GERADO ---")
 
