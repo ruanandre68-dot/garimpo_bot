@@ -1,70 +1,75 @@
 import requests
 from bs4 import BeautifulSoup
 
-print("--- ☣️ INICIANDO PROTOCOLO OSINT: GARIMPO FANTASMA ☣️ ---")
+print("--- 🛰️ INICIANDO PROTOCOLO: OLHO DE DEUS ---")
+print("Buscando transmissões e diretórios não protegidos...")
 
-query = 'intitle:"index of" "dcim" | "logs"'
-url = f"https://www.google.com/search?q={query}&num=10"
+# Dorks assustadoras: Câmeras IP (Live View) e Backups de Banco de Dados
+queries = [
+    'inurl:"view/view.shtml"', # Câmeras de segurança abertas
+    'intitle:"index of" "password.txt" | "config.php"', # Arquivos de senha esquecidos
+    'intitle:"index of" "backup" "sql"' # Backups de bancos de dados
+]
 
-# CORREÇÃO AQUI: Chaves simples no dicionário
-headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'}
+links_finais = []
+headers = {'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36'}
 
-try:
-    response = requests.get(url, headers=headers)
-    links_encontrados = []
+for q in queries:
+    # Usando o DuckDuckGo (Mais "amigável" para o nosso garimpo)
+    url = f"https://duckduckgo.com/html/?q={q}"
+    try:
+        res = requests.get(url, headers=headers)
+        if res.status_code == 200:
+            sopa = BeautifulSoup(res.text, 'html.parser')
+            links = sopa.find_all('a', class_='result__a')
+            for l in links[:3]: # Pega os 3 melhores de cada categoria
+                links_finais.append({'titulo': l.text, 'url': l['href']})
+                print(f"[ALVO DETECTADO]: {l.text[:40]}...")
+    except:
+        continue
 
-    if response.status_code == 200:
-        sopa = BeautifulSoup(response.text, 'html.parser')
-        for g in sopa.find_all('div', class_='yuRUbf'): # Classe atualizada do Google
-            a_tag = g.find('a')
-            if a_tag:
-                link = a_tag['href']
-                titulo = g.find('h3').text if g.find('h3') else "Sem Título"
-                links_encontrados.append({'titulo': titulo, 'url': link})
-                print(f"[VESTÍGIO]: {titulo[:30]}...")
-    
-    # Se o Google bloquear, usamos alvos de treinamento
-    if not links_encontrados:
-        links_encontrados = [
-            {'titulo': '⚠️ Servidor Protegido (Captcha)', 'url': 'https://www.google.com/search?q=index+of+logs'},
-            {'titulo': '⚠️ Diretório de Treinamento', 'url': 'http://testphp.vulnweb.com/'}
-        ]
+# --- HTML DE ELITE (ESTILO MATRIX/TERMINAL) ---
+html = f"""
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>SISTEMA DE MONITORAMENTO FANTASMA</title>
+    <style>
+        body {{ background: #000; color: #0f0; font-family: 'Courier New'; padding: 20px; text-transform: uppercase; }}
+        .radar {{ border: 2px solid #0f0; padding: 20px; box-shadow: 0 0 20px #0f0; }}
+        h1 {{ color: #f00; font-size: 20px; border-bottom: 2px solid #f00; padding-bottom: 10px; }}
+        .item {{ margin: 20px 0; border-left: 3px solid #f00; padding-left: 10px; animation: pulse 2s infinite; }}
+        @keyframes pulse {{ 0% {{ opacity: 1; }} 50% {{ opacity: 0.5; }} 100% {{ opacity: 1; }} }}
+        a {{ color: #0ff; text-decoration: none; font-size: 12px; }}
+        .warning {{ color: #ff0; font-size: 10px; margin-top: 40px; border: 1px dashed #ff0; padding: 10px; }}
+    </style>
+</head>
+<body>
+    <div class="radar">
+        <h1>☣️ ALVOS DETECTADOS NA REDE MUNDIAL</h1>
+        <p>> ESCANEAMENTO DE INFRAESTRUTURA COMPLETO...</p>
+"""
 
-    # HTML com chaves duplas apenas no CSS (obrigatório para f-strings)
-    html_garimpo = f"""
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <meta charset="UTF-8">
-        <title>GARIMPO FANTASMA</title>
-        <style>
-            body {{ background: #000; color: #0f0; font-family: monospace; padding: 20px; }}
-            .box {{ border: 1px solid #0f0; padding: 15px; background: rgba(0,20,0,0.8); }}
-            h1 {{ color: #f00; text-shadow: 0 0 5px #f00; }}
-            .item {{ margin: 10px 0; padding: 10px; border-bottom: 1px solid #050; }}
-            a {{ color: #ff0; text-decoration: none; font-size: 12px; }}
-        </style>
-    </head>
-    <body>
-        <div class="box">
-            <h1>BIO-DIGITAL SCAVENGER</h1>
-            <p>> ESCANEAMENTO CONCLUÍDO. ALVOS:</p>
+for i in links_finais:
+    html += f"""
+        <div class="item">
+            <div style="font-weight:bold; color: #0f0;">> DETECTADO: {i['titulo']}</div>
+            <a href="{i['url']}" target="_blank">ACESSAR TRANSMISSÃO / DIRETÓRIO</a>
+        </div>
     """
 
-    for item in links_encontrados:
-        html_garimpo += f"""
-            <div class="item">
-                <div style="font-weight:bold">> {item['titulo']}</div>
-                <a href="{item['url']}" target="_blank">{item['url']}</a>
-            </div>
-        """
+html += """
+        <div class="warning">
+            AVISO: O acesso a sistemas de terceiros sem autorização é ilegal. 
+            Este robô serve apenas para fins de estudo de segurança cibernética (OSINT).
+        </div>
+    </div>
+</body>
+</html>
+"""
 
-    html_garimpo += "</div></body></html>"
-
-    with open("garimpo.html", "w", encoding="utf-8") as f:
-        f.write(html_garimpo)
-    print("--- ☣️ SUCESSO: garimpo.html gerado ---")
-
-except Exception as e:
-    print(f"Erro: {e}")
+with open("garimpo.html", "w", encoding="utf-8") as f:
+    f.write(html)
+print("--- 🛰️ GARIMPO CONCLUÍDO COM SUCESSO ---")
 
